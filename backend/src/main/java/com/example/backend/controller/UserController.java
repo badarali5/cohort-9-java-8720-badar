@@ -22,13 +22,7 @@ public class UserController {
     private final AuthService authService;
     private final UserRepository userRepository;
 
-    /**
-     * Changes the password for the currently authenticated user.
-     *
-     * @param request the current and new password payload
-     * @param authentication the current authenticated session
-     * @return success message
-     */
+
     @PutMapping("/password")
     public ResponseEntity<Map<String, String>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,

@@ -24,9 +24,6 @@ public class JwtTokenProvider {
         this.jwtExpirationMs = jwtExpirationMs;
     }
 
-    /**
-     * Generates a JWT token for the given user email.
-     */
     public String generateToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
@@ -42,9 +39,6 @@ public class JwtTokenProvider {
         return token;
     }
 
-    /**
-     * Extracts the email (subject) from a JWT token.
-     */
     public String getEmailFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(jwtSecret)
@@ -54,10 +48,6 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
-    /**
-     * Validates a JWT token.
-     * Returns true if the token is valid and not expired.
-     */
     public boolean validateToken(String token) {
         try {
             Jwts.parser()

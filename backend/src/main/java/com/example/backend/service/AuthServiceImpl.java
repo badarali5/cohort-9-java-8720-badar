@@ -25,13 +25,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        // Validate that at least email or phone is provided
         if (!request.hasContactInfo()) {
             log.warn("Registration attempt without email or phone");
             throw new BadRequestException("At least one of email or phone must be provided");
         }
 
-        // Check for duplicate email
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             if (userRepository.existsByEmail(request.getEmail())) {
                 log.warn("Duplicate registration attempt with email: {}", request.getEmail());
@@ -39,7 +37,6 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // Check for duplicate phone
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             if (userRepository.existsByPhone(request.getPhone())) {
                 log.warn("Duplicate registration attempt with phone: {}", request.getPhone());
@@ -47,7 +44,6 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        // Build and save user
         User user = new User();
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -58,7 +54,6 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with email: {}", savedUser.getEmail());
 
-        // Generate JWT token
         String token = jwtTokenProvider.generateToken(savedUser.getEmail());
 
         return new AuthResponse(token, savedUser.getId(), savedUser.getFirstName(),
@@ -70,7 +65,6 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         String identifier = request.getIdentifier();
 
-        // Try to find user by email or phone
         User user = userRepository.findByEmail(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
@@ -78,7 +72,6 @@ public class AuthServiceImpl implements AuthService {
                             return new UnauthorizedException("Invalid credentials");
                         }));
 
-        // Verify password
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Failed login attempt: incorrect password for identifier: {}", identifier);
             throw new UnauthorizedException("Invalid credentials");
@@ -86,7 +79,6 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("User logged in successfully: {}", user.getEmail());
 
-        // Generate JWT token
         String token = jwtTokenProvider.generateToken(user.getEmail());
 
         return new AuthResponse(token, user.getId(), user.getFirstName(),
@@ -102,13 +94,11 @@ public class AuthServiceImpl implements AuthService {
                     return new BadRequestException("User not found");
                 });
 
-        // Verify current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             log.warn("Password change failed: incorrect current password for user ID: {}", userId);
             throw new UnauthorizedException("Current password is incorrect");
         }
 
-        // Hash and update new password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 

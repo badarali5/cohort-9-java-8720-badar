@@ -36,9 +36,6 @@ public class RegisterRequest {
     )
     private String phone;
 
-    /**
-     * Custom validation: At least one of email or phone must be provided.
-     */
     public boolean hasContactInfo() {
         return (email != null && !email.isBlank()) || (phone != null && !phone.isBlank());
     }
