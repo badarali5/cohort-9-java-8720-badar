@@ -31,7 +31,7 @@ public class UserController {
         String email = authentication.getName();
         log.info("Password change request received for user: {}", email);
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> {
                     log.error("Authenticated user not found in database: {}", email);
                     return new RuntimeException("User not found");

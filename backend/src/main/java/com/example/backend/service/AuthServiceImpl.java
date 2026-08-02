@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            if (userRepository.existsByEmail(request.getEmail())) {
+            if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
                 log.warn("Duplicate registration attempt with email: {}", request.getEmail());
                 throw new DuplicateResourceException("Email is already registered: " + request.getEmail());
             }
@@ -65,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         String identifier = request.getIdentifier();
 
-        User user = userRepository.findByEmail(identifier)
+        User user = userRepository.findByEmailIgnoreCase(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
                             log.warn("Failed login attempt: user not found with identifier: {}", identifier);
