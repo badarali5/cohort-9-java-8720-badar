@@ -40,20 +40,12 @@ public class JwtTokenProvider {
     }
 
     public String getEmailFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith(jwtSecret)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        return parseClaims(token).getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(jwtSecret)
-                    .build()
-                    .parseSignedClaims(token);
+            parseClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
             log.warn("JWT token is expired: {}", e.getMessage());
@@ -67,6 +59,14 @@ public class JwtTokenProvider {
             log.warn("Invalid JWT token: {}", e.getMessage());
         }
         return false;
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(jwtSecret)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
 

@@ -46,10 +46,10 @@ public class ContactServiceImpl implements ContactService {
         Page<Contact> contactPage;
 
         if (search != null && !search.isBlank()) {
-            log.info("Searching contacts for user '{}' with term: {}", userEmail, search);
+            log.info("Searching contacts for userId={} with term: {}", user.getId(), search);
             contactPage = contactRepository.searchByUserId(user.getId(), search.trim(), pageable);
         } else {
-            log.info("Fetching all contacts for user '{}', page: {}, size: {}", userEmail, page, size);
+            log.info("Fetching all contacts for userId={}, page: {}, size: {}", user.getId(), page, size);
             contactPage = contactRepository.findByUserId(user.getId(), pageable);
         }
 
@@ -61,7 +61,7 @@ public class ContactServiceImpl implements ContactService {
     public ContactResponseDto getContactById(Long id, String userEmail) {
         User user = getUserByEmail(userEmail);
         Contact contact = findContactOwnedByUser(id, user.getId());
-        log.info("Contact retrieved: id={} for user '{}'", id, userEmail);
+        log.info("Contact retrieved: id={} for userId={}", id, user.getId());
         return mapToResponseDto(contact);
     }
 
@@ -76,29 +76,12 @@ public class ContactServiceImpl implements ContactService {
         contact.setTitle(request.getTitle());
         contact.setUser(user);
 
-        if (request.getEmails() != null) {
-            for (EmailDto emailDto : request.getEmails()) {
-                Email email = new Email();
-                email.setEmail(emailDto.getEmail());
-                email.setLabel(emailDto.getLabel());
-                email.setContact(contact);
-                contact.getEmails().add(email);
-            }
-        }
-
-        if (request.getPhones() != null) {
-            for (PhoneDto phoneDto : request.getPhones()) {
-                Phone phone = new Phone();
-                phone.setNumber(phoneDto.getNumber());
-                phone.setLabel(phoneDto.getLabel());
-                phone.setContact(contact);
-                contact.getPhones().add(phone);
-            }
-        }
+        applyEmails(contact, request.getEmails());
+        applyPhones(contact, request.getPhones());
 
         Contact savedContact = contactRepository.save(contact);
-        log.info("Contact created successfully: id={}, firstName='{}' for user '{}'",
-                savedContact.getId(), savedContact.getFirstName(), userEmail);
+        log.info("Contact created successfully: id={} for userId={}",
+                savedContact.getId(), user.getId());
         return mapToResponseDto(savedContact);
     }
 
@@ -113,29 +96,13 @@ public class ContactServiceImpl implements ContactService {
         contact.setTitle(request.getTitle());
 
         contact.getEmails().clear();
-        if (request.getEmails() != null) {
-            for (EmailDto emailDto : request.getEmails()) {
-                Email email = new Email();
-                email.setEmail(emailDto.getEmail());
-                email.setLabel(emailDto.getLabel());
-                email.setContact(contact);
-                contact.getEmails().add(email);
-            }
-        }
+        applyEmails(contact, request.getEmails());
 
         contact.getPhones().clear();
-        if (request.getPhones() != null) {
-            for (PhoneDto phoneDto : request.getPhones()) {
-                Phone phone = new Phone();
-                phone.setNumber(phoneDto.getNumber());
-                phone.setLabel(phoneDto.getLabel());
-                phone.setContact(contact);
-                contact.getPhones().add(phone);
-            }
-        }
+        applyPhones(contact, request.getPhones());
 
         Contact savedContact = contactRepository.save(contact);
-        log.info("Contact updated successfully: id={} for user '{}'", id, userEmail);
+        log.info("Contact updated successfully: id={} for userId={}", id, user.getId());
         return mapToResponseDto(savedContact);
     }
 
@@ -145,14 +112,40 @@ public class ContactServiceImpl implements ContactService {
         User user = getUserByEmail(userEmail);
         Contact contact = findContactOwnedByUser(id, user.getId());
         contactRepository.delete(contact);
-        log.info("Contact deleted successfully: id={} for user '{}'", id, userEmail);
+        log.info("Contact deleted successfully: id={} for userId={}", id, user.getId());
+    }
+
+    private void applyEmails(Contact contact, List<EmailDto> emailDtos) {
+        if (emailDtos == null) {
+            return;
+        }
+        for (EmailDto emailDto : emailDtos) {
+            Email email = new Email();
+            email.setEmail(emailDto.getEmail());
+            email.setLabel(emailDto.getLabel());
+            email.setContact(contact);
+            contact.getEmails().add(email);
+        }
+    }
+
+    private void applyPhones(Contact contact, List<PhoneDto> phoneDtos) {
+        if (phoneDtos == null) {
+            return;
+        }
+        for (PhoneDto phoneDto : phoneDtos) {
+            Phone phone = new Phone();
+            phone.setNumber(phoneDto.getNumber());
+            phone.setLabel(phoneDto.getLabel());
+            phone.setContact(contact);
+            contact.getPhones().add(phone);
+        }
     }
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> {
-                    log.error("Authenticated user not found with email: {}", email);
-                    return new ResourceNotFoundException("User not found with email: " + email);
+                    log.error("Authenticated user not found");
+                    return new ResourceNotFoundException("User not found");
                 });
     }
 
