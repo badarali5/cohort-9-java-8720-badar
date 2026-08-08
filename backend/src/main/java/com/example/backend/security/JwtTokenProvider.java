@@ -18,18 +18,14 @@ public class JwtTokenProvider {
     private final long jwtExpirationMs;
 
     public JwtTokenProvider(
-            @Value("${app.jwt.secret}") String jwtSecret,
-            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
-        byte[] keyBytes;
-        try {
-            keyBytes = Decoders.BASE64.decode(jwtSecret);
-        } catch (IllegalArgumentException ex) {
-            keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        }
-        this.jwtSecret = Keys.hmacShaKeyFor(keyBytes);
-        this.jwtExpirationMs = jwtExpirationMs;
-    }
+        @Value("${app.jwt.secret}") String jwtSecret,
+        @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
 
+    this.jwtSecret = Keys.hmacShaKeyFor(
+            jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+    );
+    this.jwtExpirationMs = jwtExpirationMs;
+}
     public String generateToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
