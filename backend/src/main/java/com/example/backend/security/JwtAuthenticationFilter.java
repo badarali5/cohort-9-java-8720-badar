@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Authenticated user: {}", email);
+                log.debug("Authenticated user established");
             }
         } catch (Exception e) {
             log.error("Could not set user authentication in security context", e);

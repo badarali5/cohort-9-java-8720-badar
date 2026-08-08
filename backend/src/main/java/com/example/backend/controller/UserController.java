@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ChangePasswordRequest;
 import com.example.backend.entity.User;
+import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -28,17 +29,21 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
 
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new UnauthorizedException("Authentication is required");
+        }
+
         String email = authentication.getName();
-        log.info("Password change request received for user: {}", email);
+        log.info("Password change request received");
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
-                    log.error("Authenticated user not found in database: {}", email);
-                    return new RuntimeException("User not found");
+                    log.error("Authenticated user not found in database");
+                    return new UnauthorizedException("Authentication is required");
                 });
 
         authService.changePassword(user.getId(), request);
-        log.info("Password changed successfully for user: {}", email);
+        log.info("Password changed successfully");
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }

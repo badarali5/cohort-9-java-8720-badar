@@ -35,7 +35,7 @@ public class JwtTokenProvider {
                 .signWith(jwtSecret)
                 .compact();
 
-        log.debug("JWT token generated for user: {}", email);
+        log.debug("JWT token generated");
         return token;
     }
 

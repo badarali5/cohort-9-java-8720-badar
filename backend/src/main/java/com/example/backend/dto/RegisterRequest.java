@@ -21,12 +21,14 @@ public class RegisterRequest {
     @Size(max = 50, message = "Last name must not exceed 50 characters")
     private String lastName;
 
+        @NotBlank(message = "Password is required")
     @Pattern(
             regexp = "^(?=.*[a-zA-Z])(?=.*\\d).{8,}$",
             message = "Password must be at least 8 characters and contain at least one letter and one number"
     )
     private String password;
 
+        @NotBlank(message = "Email is required")
     @jakarta.validation.constraints.Email(message = "Email must be a valid email address")
     private String email;
 
@@ -35,9 +37,5 @@ public class RegisterRequest {
             message = "Phone number must be a valid international phone number (e.g., +1234567890)"
     )
     private String phone;
-
-    public boolean hasContactInfo() {
-        return (email != null && !email.isBlank()) || (phone != null && !phone.isBlank());
-    }
 }
 

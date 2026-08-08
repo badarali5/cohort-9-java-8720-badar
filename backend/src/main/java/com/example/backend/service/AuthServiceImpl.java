@@ -25,22 +25,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (!request.hasContactInfo()) {
-            log.warn("Registration attempt without email or phone");
-            throw new BadRequestException("At least one of email or phone must be provided");
-        }
-
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            if (userRepository.existsByEmail(request.getEmail())) {
-                log.warn("Duplicate registration attempt with email: {}", request.getEmail());
-                throw new DuplicateResourceException("Email is already registered: " + request.getEmail());
-            }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("Duplicate registration attempt");
+            throw new DuplicateResourceException("Email is already registered");
         }
 
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             if (userRepository.existsByPhone(request.getPhone())) {
-                log.warn("Duplicate registration attempt with phone: {}", request.getPhone());
-                throw new DuplicateResourceException("Phone number is already registered: " + request.getPhone());
+                log.warn("Duplicate registration attempt");
+                throw new DuplicateResourceException("Phone number is already registered");
             }
         }
 
@@ -52,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
-        log.info("User registered successfully with email: {}", savedUser.getEmail());
+    log.info("User registered successfully with id: {}", savedUser.getId());
 
         String token = jwtTokenProvider.generateToken(savedUser.getEmail());
 
@@ -68,16 +61,16 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
-                            log.warn("Failed login attempt: user not found with identifier: {}", identifier);
+                            log.warn("Failed login attempt: user not found");
                             return new UnauthorizedException("Invalid credentials");
                         }));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Failed login attempt: incorrect password for identifier: {}", identifier);
+            log.warn("Failed login attempt: incorrect password");
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        log.info("User logged in successfully: {}", user.getEmail());
+        log.info("User logged in successfully with id: {}", user.getId());
 
         String token = jwtTokenProvider.generateToken(user.getEmail());
 
@@ -90,19 +83,19 @@ public class AuthServiceImpl implements AuthService {
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
-                    log.error("Password change attempt for non-existent user ID: {}", userId);
+                    log.error("Password change attempt for non-existent user");
                     return new BadRequestException("User not found");
                 });
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            log.warn("Password change failed: incorrect current password for user ID: {}", userId);
+            log.warn("Password change failed: incorrect current password");
             throw new UnauthorizedException("Current password is incorrect");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        log.info("Password changed successfully for user ID: {}", userId);
+        log.info("Password changed successfully for user id: {}", userId);
     }
 }
 

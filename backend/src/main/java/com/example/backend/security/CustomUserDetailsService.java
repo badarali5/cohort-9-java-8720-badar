@@ -25,11 +25,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
-                            log.warn("User not found with identifier: {}", identifier);
-                            return new UsernameNotFoundException("User not found with identifier: " + identifier);
+                    log.warn("User not found during authentication");
+                    return new UsernameNotFoundException("User not found");
                         }));
 
-        log.debug("User loaded successfully: {}", user.getEmail());
+        log.debug("User loaded successfully");
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
