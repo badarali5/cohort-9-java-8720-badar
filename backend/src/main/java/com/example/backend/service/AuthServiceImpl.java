@@ -94,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
                     return new ResourceNotFoundException("User not found");
                 });
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             log.warn("Password change failed: incorrect current password for user ID: {}", userId);
             throw new UnauthorizedException("Current password is incorrect");
         }
