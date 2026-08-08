@@ -20,7 +20,13 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
-        this.jwtSecret = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(jwtSecret);
+        } catch (IllegalArgumentException ex) {
+            keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+        this.jwtSecret = Keys.hmacShaKeyFor(keyBytes);
         this.jwtExpirationMs = jwtExpirationMs;
     }
 
