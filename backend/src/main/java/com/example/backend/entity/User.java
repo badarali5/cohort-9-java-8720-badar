@@ -38,8 +38,10 @@ public class User {
 
     private String phone;
 
+
     @NotBlank(message = "Password is required")
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(updatable = false)
