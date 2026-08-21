@@ -32,4 +32,3 @@ public class Email {
     @JsonIgnore
     private Contact contact;
 }
-
