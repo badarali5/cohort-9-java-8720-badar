@@ -84,7 +84,6 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(token, user.getId(), user.getFirstName(),
                 user.getLastName(), user.getEmail());
     }
-
     @Override
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
@@ -94,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
                     return new ResourceNotFoundException("User not found");
                 });
 
-        if (!passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             log.warn("Password change failed: incorrect current password for user ID: {}", userId);
             throw new UnauthorizedException("Current password is incorrect");
         }
@@ -105,4 +104,3 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password changed successfully for user ID: {}", userId);
     }
 }
-
