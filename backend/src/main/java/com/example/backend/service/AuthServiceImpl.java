@@ -2,13 +2,14 @@ package com.example.backend.service;
 
 import com.example.backend.dto.*;
 import com.example.backend.entity.User;
-import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.DuplicateResourceException;
+import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +26,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
             log.warn("Duplicate registration attempt");
             throw new DuplicateResourceException("Email is already registered");
         }
 
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             if (userRepository.existsByPhone(request.getPhone())) {
-                log.warn("Duplicate registration attempt");
+                log.warn("Duplicate registration attempt with phone");
                 throw new DuplicateResourceException("Phone number is already registered");
             }
         }
@@ -44,8 +45,14 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        User savedUser = userRepository.save(user);
-    log.info("User registered successfully with id: {}", savedUser.getId());
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            log.warn("Data integrity violation during registration");
+            throw new DuplicateResourceException("Email or phone number is already registered", ex);
+        }
+        log.info("User registered successfully: userId={}", savedUser.getId());
 
         String token = jwtTokenProvider.generateToken(savedUser.getEmail());
 
@@ -58,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         String identifier = request.getIdentifier();
 
-        User user = userRepository.findByEmail(identifier)
+        User user = userRepository.findByEmailIgnoreCase(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
                             log.warn("Failed login attempt: user not found");
@@ -70,21 +77,20 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        log.info("User logged in successfully with id: {}", user.getId());
+        log.info("User logged in successfully: userId={}", user.getId());
 
         String token = jwtTokenProvider.generateToken(user.getEmail());
 
         return new AuthResponse(token, user.getId(), user.getFirstName(),
                 user.getLastName(), user.getEmail());
     }
-
     @Override
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
-                    log.error("Password change attempt for non-existent user");
-                    return new BadRequestException("User not found");
+                    log.error("Password change attempt for non-existent user ID: {}", userId);
+                    return new ResourceNotFoundException("User not found");
                 });
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -98,4 +104,3 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password changed successfully for user id: {}", userId);
     }
 }
-

@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ChangePasswordRequest;
 import com.example.backend.entity.User;
+import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AuthService;
@@ -36,16 +37,15 @@ public class UserController {
         String email = authentication.getName();
         log.info("Password change request received");
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> {
                     log.error("Authenticated user not found in database");
-                    return new UnauthorizedException("Authentication is required");
+                    return new ResourceNotFoundException("User not found");
                 });
 
         authService.changePassword(user.getId(), request);
-        log.info("Password changed successfully");
+        log.info("Password changed successfully for userId={}", user.getId());
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }
-

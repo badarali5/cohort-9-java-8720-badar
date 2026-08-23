@@ -24,7 +24,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registration request received");
         AuthResponse response = authService.register(request);
-        log.info("User registered successfully");
+        log.info("User registered successfully: userId={}", response.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -32,7 +32,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login request received");
         AuthResponse response = authService.login(request);
-        log.info("User logged in successfully");
+        log.info("User logged in successfully: userId={}", response.getId());
         return ResponseEntity.ok(response);
     }
 }
