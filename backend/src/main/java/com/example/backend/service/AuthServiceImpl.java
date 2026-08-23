@@ -2,13 +2,14 @@ package com.example.backend.service;
 
 import com.example.backend.dto.*;
 import com.example.backend.entity.User;
-import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.DuplicateResourceException;
+import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         String identifier = request.getIdentifier();
 
-        User user = userRepository.findByEmail(identifier)
+        User user = userRepository.findByEmailIgnoreCase(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
                             log.warn("Failed login attempt: user not found");
@@ -77,7 +78,6 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(token, user.getId(), user.getFirstName(),
                 user.getLastName(), user.getEmail());
     }
-
     @Override
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
@@ -98,4 +98,3 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password changed successfully for user id: {}", userId);
     }
 }
-

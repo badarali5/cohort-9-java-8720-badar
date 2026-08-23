@@ -84,7 +84,6 @@ public class ContactServiceImpl implements ContactService {
             savedContact.setEmails(emails);
         }
 
-        // Add phones if provided
         if (contactRequestDto.getPhones() != null && !contactRequestDto.getPhones().isEmpty()) {
             List<Phone> phones = contactRequestDto.getPhones().stream()
                     .map(phoneDto -> {
@@ -116,8 +115,6 @@ public class ContactServiceImpl implements ContactService {
         contact.setFirstName(contactRequestDto.getFirstName());
         contact.setLastName(contactRequestDto.getLastName());
         contact.setTitle(contactRequestDto.getTitle());
-
-        // Update emails
         if (contactRequestDto.getEmails() != null) {
             emailRepository.deleteAll(contact.getEmails());
             List<Email> emails = contactRequestDto.getEmails().stream()
@@ -132,7 +129,6 @@ public class ContactServiceImpl implements ContactService {
             contact.setEmails(emailRepository.saveAll(emails));
         }
 
-        // Update phones
         if (contactRequestDto.getPhones() != null) {
             phoneRepository.deleteAll(contact.getPhones());
             List<Phone> phones = contactRequestDto.getPhones().stream()
