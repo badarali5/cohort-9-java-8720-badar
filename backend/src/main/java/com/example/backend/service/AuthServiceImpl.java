@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
-    log.info("User registered successfully with id: {}", savedUser.getId());
+        log.info("User registered successfully");
 
         String token = jwtTokenProvider.generateToken(savedUser.getEmail());
 
@@ -70,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        log.info("User logged in successfully with id: {}", user.getId());
+        log.info("User logged in successfully");
 
         String token = jwtTokenProvider.generateToken(user.getEmail());
 
@@ -95,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        log.info("Password changed successfully for user id: {}", userId);
+        log.info("Password changed successfully");
     }
 }
 

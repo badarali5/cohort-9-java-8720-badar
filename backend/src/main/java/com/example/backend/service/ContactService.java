@@ -2,38 +2,31 @@ package com.example.backend.service;
 
 import com.example.backend.dto.ContactRequestDto;
 import com.example.backend.dto.ContactResponseDto;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 public interface ContactService {
 
-    /**
-     * Fetch paginated contacts for the authenticated user
-     */
+    Page<ContactResponseDto> getAllContacts(String search, int page, int size, String sortBy, String sortDir, String userEmail);
+
+    ContactResponseDto getContactById(Long id, String userEmail);
+
+    ContactResponseDto createContact(ContactRequestDto request, String userEmail);
+
+    ContactResponseDto updateContact(Long id, ContactRequestDto request, String userEmail);
+
+    void deleteContact(Long id, String userEmail);
+
     Page<ContactResponseDto> getContactsByUser(Long userId, Pageable pageable);
 
-    /**
-     * Search contacts by search term for the authenticated user
-     */
     Page<ContactResponseDto> searchContacts(Long userId, String searchTerm, Pageable pageable);
 
-    /**
-     * Create a new contact with nested emails and phones
-     */
-    ContactResponseDto createContact(Long userId, ContactRequestDto contactRequestDto);
+    ContactResponseDto createContact(Long userId, ContactRequestDto request);
 
-    /**
-     * Update an existing contact
-     */
-    ContactResponseDto updateContact(Long userId, Long contactId, ContactRequestDto contactRequestDto);
+    ContactResponseDto updateContact(Long userId, Long contactId, ContactRequestDto request);
 
-    /**
-     * Delete a contact
-     */
     void deleteContact(Long userId, Long contactId);
 
-    /**
-     * Get a single contact by ID
-     */
     ContactResponseDto getContactById(Long userId, Long contactId);
 }
+
