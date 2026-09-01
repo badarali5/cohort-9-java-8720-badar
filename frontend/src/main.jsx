@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
 import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -17,7 +18,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route element={<ProtectedRoute />}><Route path="/dashboard" element={<Dashboard />} /></Route>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+            </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AuthProvider>
