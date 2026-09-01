@@ -18,12 +18,14 @@ public class JwtTokenProvider {
     private final long jwtExpirationMs;
 
     public JwtTokenProvider(
-            @Value("${app.jwt.secret}") String jwtSecret,
-            @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
-        this.jwtSecret = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
-        this.jwtExpirationMs = jwtExpirationMs;
-    }
+        @Value("${app.jwt.secret}") String jwtSecret,
+        @Value("${app.jwt.expiration-ms}") long jwtExpirationMs) {
 
+    this.jwtSecret = Keys.hmacShaKeyFor(
+            jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+    );
+    this.jwtExpirationMs = jwtExpirationMs;
+}
     public String generateToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
@@ -35,7 +37,7 @@ public class JwtTokenProvider {
                 .signWith(jwtSecret)
                 .compact();
 
-        log.debug("JWT token generated for user: {}", email);
+        log.debug("JWT token generated");
         return token;
     }
 

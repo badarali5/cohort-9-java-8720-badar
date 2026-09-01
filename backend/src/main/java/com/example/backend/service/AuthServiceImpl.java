@@ -94,13 +94,13 @@ public class AuthServiceImpl implements AuthService {
                 });
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            log.warn("Password change failed: incorrect current password for user ID: {}", userId);
+            log.warn("Password change failed: incorrect current password");
             throw new UnauthorizedException("Current password is incorrect");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        log.info("Password changed successfully for user ID: {}", userId);
+        log.info("Password changed successfully for user id: {}", userId);
     }
 }

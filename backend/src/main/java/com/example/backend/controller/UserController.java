@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.dto.ChangePasswordRequest;
 import com.example.backend.entity.User;
 import com.example.backend.exception.ResourceNotFoundException;
+import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -29,6 +30,10 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
 
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new UnauthorizedException("Authentication is required");
+        }
+
         String email = authentication.getName();
         log.info("Password change request received");
 
@@ -44,4 +49,3 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }
-
