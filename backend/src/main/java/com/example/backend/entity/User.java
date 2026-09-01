@@ -39,6 +39,7 @@ public class User {
     @Column(unique = true)
     private String phone;
 
+
     @NotBlank(message = "Password is required")
     @Column(nullable = false)
     @JsonIgnore
