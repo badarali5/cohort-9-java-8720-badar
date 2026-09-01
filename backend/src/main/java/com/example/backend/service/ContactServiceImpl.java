@@ -117,20 +117,24 @@ public class ContactServiceImpl implements ContactService {
         contact.setLastName(contactRequestDto.getLastName());
         contact.setTitle(contactRequestDto.getTitle());
 
-        // Update emails
         if (contactRequestDto.getEmails() != null) {
-            emailRepository.deleteAll(contact.getEmails());
-            List<Email> emails = contactRequestDto.getEmails().stream()
-                    .map(emailDto -> {
-                        Email email = new Email();
-                        email.setEmail(emailDto.getEmail());
-                        email.setLabel(emailDto.getLabel());
-                        email.setContact(contact);
-                        return email;
-                    })
-                    .collect(Collectors.toList());
-            contact.setEmails(emailRepository.saveAll(emails));
-        }
+    // Guard against null (and optionally empty) collection
+    if (contact.getEmails() != null && !contact.getEmails().isEmpty()) {
+        emailRepository.deleteAll(contact.getEmails());
+    }
+
+    List<Email> emails = contactRequestDto.getEmails().stream()
+            .map(emailDto -> {
+                Email email = new Email();
+                email.setEmail(emailDto.getEmail());
+                email.setLabel(emailDto.getLabel());
+                email.setContact(contact);
+                return email;
+            })
+            .collect(Collectors.toList());
+
+    contact.setEmails(emailRepository.saveAll(emails));
+}
 
         // Update phones
         if (contactRequestDto.getPhones() != null) {

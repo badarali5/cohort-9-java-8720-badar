@@ -174,7 +174,7 @@ class AuthServiceTest {
     @DisplayName("Should successfully login with correct email and password")
     void testLoginSuccessByEmail() {
         // Arrange
-        when(userRepository.findByEmail(loginRequest.getIdentifier())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase(loginRequest.getIdentifier())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())).thenReturn(true);
         when(jwtTokenProvider.generateToken(user.getEmail())).thenReturn("jwt.token.here");
 
@@ -190,7 +190,7 @@ class AuthServiceTest {
         assertEquals("john.doe@example.com", response.getEmail());
 
         // Verify
-        verify(userRepository).findByEmail(loginRequest.getIdentifier());
+        verify(userRepository).findByEmailIgnoreCase(loginRequest.getIdentifier());
         verify(passwordEncoder).matches(loginRequest.getPassword(), user.getPassword());
         verify(jwtTokenProvider).generateToken(user.getEmail());
     }
@@ -200,7 +200,7 @@ class AuthServiceTest {
     void testLoginSuccessByPhone() {
         // Arrange
         loginRequest.setIdentifier("+1234567890");
-        when(userRepository.findByEmail(loginRequest.getIdentifier())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(loginRequest.getIdentifier())).thenReturn(Optional.empty());
         when(userRepository.findByPhone(loginRequest.getIdentifier())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())).thenReturn(true);
         when(jwtTokenProvider.generateToken(user.getEmail())).thenReturn("jwt.token.here");
@@ -214,7 +214,7 @@ class AuthServiceTest {
         assertEquals(1L, response.getId());
 
         // Verify
-        verify(userRepository).findByEmail(loginRequest.getIdentifier());
+        verify(userRepository).findByEmailIgnoreCase(loginRequest.getIdentifier());
         verify(userRepository).findByPhone(loginRequest.getIdentifier());
         verify(passwordEncoder).matches(loginRequest.getPassword(), user.getPassword());
     }
@@ -223,7 +223,7 @@ class AuthServiceTest {
     @DisplayName("Should throw UnauthorizedException when user not found")
     void testLoginFailureUserNotFound() {
         // Arrange
-        when(userRepository.findByEmail(loginRequest.getIdentifier())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(loginRequest.getIdentifier())).thenReturn(Optional.empty());
         when(userRepository.findByPhone(loginRequest.getIdentifier())).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -235,7 +235,7 @@ class AuthServiceTest {
         assertEquals("Invalid credentials", exception.getMessage());
 
         // Verify
-        verify(userRepository).findByEmail(loginRequest.getIdentifier());
+        verify(userRepository).findByEmailIgnoreCase(loginRequest.getIdentifier());
         verify(userRepository).findByPhone(loginRequest.getIdentifier());
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(jwtTokenProvider, never()).generateToken(anyString());
@@ -245,7 +245,7 @@ class AuthServiceTest {
     @DisplayName("Should throw UnauthorizedException when password is incorrect")
     void testLoginFailureIncorrectPassword() {
         // Arrange
-        when(userRepository.findByEmail(loginRequest.getIdentifier())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase(loginRequest.getIdentifier())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())).thenReturn(false);
 
         // Act & Assert
@@ -257,7 +257,7 @@ class AuthServiceTest {
         assertEquals("Invalid credentials", exception.getMessage());
 
         // Verify
-        verify(userRepository).findByEmail(loginRequest.getIdentifier());
+        verify(userRepository).findByEmailIgnoreCase(loginRequest.getIdentifier());
         verify(passwordEncoder).matches(loginRequest.getPassword(), user.getPassword());
         verify(jwtTokenProvider, never()).generateToken(anyString());
     }
