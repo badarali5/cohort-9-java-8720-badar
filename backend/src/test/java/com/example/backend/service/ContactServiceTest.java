@@ -179,7 +179,19 @@ class ContactServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> contactService.getAllContacts(user.getId(), null, 0, 10, "unknownField", "asc"));
 
-        assertEquals("Invalid sort field. Allowed values: id, firstName, lastName, email, phone", exception.getMessage());
+        assertEquals("Invalid sort field. Allowed values: id, firstName, lastName, title", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject collection-valued sort fields for email and phone")
+    void testGetAllContactsRejectsCollectionSortFields() {
+        IllegalArgumentException emailException = assertThrows(IllegalArgumentException.class,
+                () -> contactService.getAllContacts(user.getId(), null, 0, 10, "email", "asc"));
+        IllegalArgumentException phoneException = assertThrows(IllegalArgumentException.class,
+                () -> contactService.getAllContacts(user.getId(), null, 0, 10, "phone", "asc"));
+
+        assertEquals("Invalid sort field. Allowed values: id, firstName, lastName, title", emailException.getMessage());
+        assertEquals("Invalid sort field. Allowed values: id, firstName, lastName, title", phoneException.getMessage());
     }
 
     // ==================== Search Contacts Tests ====================

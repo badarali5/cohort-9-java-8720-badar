@@ -29,9 +29,11 @@ function normalizeContact(value) {
 
 export default function ContactModal({ contact, onClose, onSave }) {
   const [form, setForm] = useState(normalizeContact(contact ?? emptyContact))
+  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     setForm(normalizeContact(contact ?? emptyContact))
+    setFormError('')
   }, [contact])
 
   function updateField(field, value) {
@@ -63,10 +65,18 @@ export default function ContactModal({ contact, onClose, onSave }) {
   function submit(event) {
     event.preventDefault()
 
+    const firstName = form.firstName?.trim() ?? ''
+    const lastName = form.lastName?.trim() ?? ''
+
+    if (!firstName || !lastName) {
+      setFormError('First name and last name are required.')
+      return
+    }
+
     const cleaned = {
       ...form,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
+      firstName,
+      lastName,
       title: form.title.trim(),
       emails: (form.emails || [])
         .filter((email) => email.value?.trim())
@@ -76,6 +86,7 @@ export default function ContactModal({ contact, onClose, onSave }) {
         .map((phone) => ({ ...phone, value: phone.value.trim(), label: phone.label || 'Mobile' })),
     }
 
+    setFormError('')
     onSave(cleaned)
   }
 
@@ -90,14 +101,29 @@ export default function ContactModal({ contact, onClose, onSave }) {
         </div>
 
         <form onSubmit={submit} className="contact-form">
+          {formError && <div className="form-alert" role="alert">{formError}</div>}
           <div className="field-grid two-up">
             <label>
               First name
-              <input value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} required />
+              <input
+                value={form.firstName}
+                onChange={(event) => {
+                  updateField('firstName', event.target.value)
+                  if (formError) setFormError('')
+                }}
+                required
+              />
             </label>
             <label>
               Last name
-              <input value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} required />
+              <input
+                value={form.lastName}
+                onChange={(event) => {
+                  updateField('lastName', event.target.value)
+                  if (formError) setFormError('')
+                }}
+                required
+              />
             </label>
           </div>
 

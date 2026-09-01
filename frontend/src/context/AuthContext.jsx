@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react'
-import api from '../api/axios'
+import api, { setAuthToken } from '../api/axios'
 
 const AuthContext = createContext(null)
 
@@ -12,33 +12,27 @@ function readStoredUser() {
 }
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => {
-    try {
-      return localStorage.getItem('auth_token')
-    } catch {
-      return null
-    }
-  })
+  const [token, setToken] = useState(null)
   const [user, setUser] = useState(readStoredUser)
 
   function login(nextToken, userData) {
     try {
-      localStorage.setItem('auth_token', nextToken)
       localStorage.setItem('auth_user', JSON.stringify(userData ?? null))
     } catch {
       // ignore storage quota/private mode issues and keep in-memory state available
     }
+    setAuthToken(nextToken)
     setToken(nextToken)
     setUser(userData ?? null)
   }
 
   function logout() {
     try {
-      localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
     } catch {
       // ignore storage quota/private mode issues and still clear session state in memory
     }
+    setAuthToken(null)
     setToken(null)
     setUser(null)
   }

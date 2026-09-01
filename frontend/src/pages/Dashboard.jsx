@@ -16,6 +16,41 @@ function buildContactSummary(contact) {
   return { email, phone }
 }
 
+function normalizeContactData(contact) {
+  if (!contact) return null
+
+  return {
+    ...contact,
+    firstName: contact.firstName ?? '',
+    lastName: contact.lastName ?? '',
+    title: contact.title ?? '',
+    emails: Array.isArray(contact.emails) ? contact.emails.map((email) => ({
+      id: email.id ?? null,
+      value: email.value ?? email.email ?? '',
+      label: email.label ?? 'Work',
+    })) : [],
+    phones: Array.isArray(contact.phones) ? contact.phones.map((phone) => ({
+      id: phone.id ?? null,
+      value: phone.value ?? phone.number ?? '',
+      label: phone.label ?? 'Mobile',
+    })) : [],
+  }
+}
+
+function toApiPayload(formData) {
+  return {
+    firstName: formData.firstName?.trim() ?? '',
+    lastName: formData.lastName?.trim() ?? '',
+    title: formData.title?.trim() ?? '',
+    emails: (formData.emails || [])
+      .filter((email) => email.value?.trim())
+      .map((email) => ({ email: email.value.trim(), label: email.label || 'Work' })),
+    phones: (formData.phones || [])
+      .filter((phone) => phone.value?.trim())
+      .map((phone) => ({ number: phone.value.trim(), label: phone.label || 'Mobile' })),
+  }
+}
+
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -32,7 +67,8 @@ export default function Dashboard() {
         setLoading(true)
         setError('')
         const response = await api.get('/contacts')
-        setContacts(response.data?.content ?? response.data ?? [])
+        const items = response.data?.content ?? response.data ?? []
+        setContacts(items.map(normalizeContactData))
       } catch (err) {
         setError('Unable to load contacts right now.')
       } finally {
@@ -72,27 +108,46 @@ export default function Dashboard() {
     setModalState(null)
   }
 
-  function saveContact(formData) {
-    if (!formData.firstName?.trim() || !formData.lastName?.trim()) return
+  async function saveContact(formData) {
+    const firstName = formData.firstName?.trim() ?? ''
+    const lastName = formData.lastName?.trim() ?? ''
 
-    if (modalState?.type === 'edit' && modalState.contact) {
-      setContacts((current) => current.map((contact) => contact.id === modalState.contact.id
-        ? { ...contact, ...formData, id: contact.id }
-        : contact))
-    } else {
-      setContacts((current) => [{
-        id: Date.now(),
-        ...formData,
-      }, ...current])
+    if (!firstName || !lastName) {
+      setError('First name and last name are required.')
+      return
     }
 
-    closeModal()
+    try {
+      setError('')
+      const payload = toApiPayload(formData)
+
+      if (modalState?.type === 'edit' && modalState.contact) {
+        const { data } = await api.put(`/contacts/${modalState.contact.id}`, payload)
+        setContacts((current) => current.map((contact) => (
+          contact.id === modalState.contact.id ? normalizeContactData(data) : contact
+        )))
+      } else {
+        const { data } = await api.post('/contacts', payload)
+        setContacts((current) => [normalizeContactData(data), ...current])
+      }
+
+      closeModal()
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to save contact right now.')
+    }
   }
 
-  function deleteContact() {
+  async function deleteContact() {
     if (!contactToDelete) return
-    setContacts((current) => current.filter((contact) => contact.id !== contactToDelete.id))
-    setContactToDelete(null)
+
+    try {
+      setError('')
+      await api.delete(`/contacts/${contactToDelete.id}`)
+      setContacts((current) => current.filter((contact) => contact.id !== contactToDelete.id))
+      setContactToDelete(null)
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Unable to delete contact right now.')
+    }
   }
 
   return (
