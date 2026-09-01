@@ -14,7 +14,9 @@ import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,25 @@ public class ContactServiceImpl implements ContactService {
     private final EmailRepository emailRepository;
     private final PhoneRepository phoneRepository;
     private final UserRepository userRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ContactResponseDto> getAllContacts(Long userId, String search, int page, int size, String sortBy, String sortDir) {
+        log.info("Fetching contacts for user: {} with search='{}', page={}, size={}, sortBy={}, sortDir={}", userId, search, page, size, sortBy, sortDir);
+
+        String sortField = (sortBy == null || sortBy.isBlank()) ? "firstName" : sortBy;
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+        Page<Contact> contacts;
+        if (search != null && !search.trim().isEmpty()) {
+            contacts = contactRepository.searchContacts(userId, search.trim(), pageable);
+        } else {
+            contacts = contactRepository.findByUserId(userId, pageable);
+        }
+
+        return contacts.map(this::convertToResponseDto);
+    }
 
     @Override
     @Transactional(readOnly = true)
