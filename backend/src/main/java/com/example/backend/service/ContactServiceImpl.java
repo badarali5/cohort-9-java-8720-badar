@@ -84,7 +84,6 @@ public class ContactServiceImpl implements ContactService {
             savedContact.setEmails(emails);
         }
 
-        // Add phones if provided
         if (contactRequestDto.getPhones() != null && !contactRequestDto.getPhones().isEmpty()) {
             List<Phone> phones = contactRequestDto.getPhones().stream()
                     .map(phoneDto -> {
@@ -118,27 +117,28 @@ public class ContactServiceImpl implements ContactService {
         contact.setTitle(contactRequestDto.getTitle());
 
         if (contactRequestDto.getEmails() != null) {
-    // Guard against null (and optionally empty) collection
-    if (contact.getEmails() != null && !contact.getEmails().isEmpty()) {
-        emailRepository.deleteAll(contact.getEmails());
-    }
+            if (contact.getEmails() != null && !contact.getEmails().isEmpty()) {
+                emailRepository.deleteAll(contact.getEmails());
+            }
 
-    List<Email> emails = contactRequestDto.getEmails().stream()
-            .map(emailDto -> {
-                Email email = new Email();
-                email.setEmail(emailDto.getEmail());
-                email.setLabel(emailDto.getLabel());
-                email.setContact(contact);
-                return email;
-            })
-            .collect(Collectors.toList());
+            List<Email> emails = contactRequestDto.getEmails().stream()
+                    .map(emailDto -> {
+                        Email email = new Email();
+                        email.setEmail(emailDto.getEmail());
+                        email.setLabel(emailDto.getLabel());
+                        email.setContact(contact);
+                        return email;
+                    })
+                    .collect(Collectors.toList());
 
-    contact.setEmails(emailRepository.saveAll(emails));
-}
+            contact.setEmails(emailRepository.saveAll(emails));
+        }
 
-        // Update phones
         if (contactRequestDto.getPhones() != null) {
-            phoneRepository.deleteAll(contact.getPhones());
+            if (contact.getPhones() != null && !contact.getPhones().isEmpty()) {
+                phoneRepository.deleteAll(contact.getPhones());
+            }
+
             List<Phone> phones = contactRequestDto.getPhones().stream()
                     .map(phoneDto -> {
                         Phone phone = new Phone();

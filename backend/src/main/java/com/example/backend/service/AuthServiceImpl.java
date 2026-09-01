@@ -4,6 +4,7 @@ import com.example.backend.dto.*;
 import com.example.backend.entity.User;
 import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.DuplicateResourceException;
+import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.security.JwtTokenProvider;
@@ -25,7 +26,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
             log.warn("Duplicate registration attempt");
             throw new DuplicateResourceException("Email is already registered");
         }
@@ -77,7 +78,6 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(token, user.getId(), user.getFirstName(),
                 user.getLastName(), user.getEmail());
     }
-
     @Override
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
@@ -98,4 +98,3 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password changed successfully for user id: {}", userId);
     }
 }
-

@@ -25,8 +25,8 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmailIgnoreCase(identifier)
                 .orElseGet(() -> userRepository.findByPhone(identifier)
                         .orElseThrow(() -> {
-                    log.warn("User not found during authentication");
-                    return new UsernameNotFoundException("User not found");
+                            log.warn("User not found during authentication");
+                            return new UsernameNotFoundException("User not found");
                         }));
 
         log.debug("User loaded successfully");
