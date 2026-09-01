@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { LogOut, Pencil, Plus, Search, Trash2, UserRound, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import api from '../api/axios'
 import ContactModal from '../components/ContactModal'
 import { useAuth } from '../context/AuthContext'
 
@@ -18,10 +19,29 @@ function buildContactSummary(contact) {
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [contacts, setContacts] = useState(initialContacts)
+  const [contacts, setContacts] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [modalState, setModalState] = useState(null)
   const [contactToDelete, setContactToDelete] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function fetchContacts() {
+      try {
+        setLoading(true)
+        setError('')
+        const response = await api.get('/contacts')
+        setContacts(response.data?.content ?? response.data ?? [])
+      } catch (err) {
+        setError('Unable to load contacts right now.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchContacts()
+  }, [])
 
   const name = user?.firstName || 'there'
 
@@ -118,7 +138,19 @@ export default function Dashboard() {
             <span className="contact-count">{filteredContacts.length} contacts</span>
           </div>
 
-          {filteredContacts.length === 0 ? (
+          {loading ? (
+            <div className="empty-state">
+              <div className="empty-icon"><Users size={28} /></div>
+              <h2>Loading contacts…</h2>
+              <p>Fetching your address book.</p>
+            </div>
+          ) : error ? (
+            <div className="empty-state">
+              <div className="empty-icon"><Users size={28} /></div>
+              <h2>Something went wrong</h2>
+              <p>{error}</p>
+            </div>
+          ) : filteredContacts.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon"><Users size={28} /></div>
               <h2>No matching contacts</h2>

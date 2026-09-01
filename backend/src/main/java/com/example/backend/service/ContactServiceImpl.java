@@ -37,15 +37,28 @@ public class ContactServiceImpl implements ContactService {
     private final PhoneRepository phoneRepository;
     private final UserRepository userRepository;
 
+    private static final List<String> ALLOWED_SORT_FIELDS = List.of("id", "firstName", "lastName", "email", "phone");
+
     @Override
     @Transactional(readOnly = true)
     public Page<ContactResponseDto> getAllContacts(Long userId, String search, int page, int size, String sortBy, String sortDir) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page index must be >= 0");
+        }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be greater than 0");
+        }
+
+        String normalizedSortField = (sortBy == null || sortBy.isBlank()) ? "firstName" : sortBy;
+        if (!ALLOWED_SORT_FIELDS.contains(normalizedSortField)) {
+            throw new IllegalArgumentException("Invalid sort field. Allowed values: id, firstName, lastName, email, phone");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        String sortField = (sortBy == null || sortBy.isBlank()) ? "firstName" : sortBy;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, normalizeSortField(normalizedSortField)));
 
         Page<Contact> contacts;
         if (search != null && !search.isBlank()) {
@@ -55,6 +68,14 @@ public class ContactServiceImpl implements ContactService {
         }
 
         return contacts.map(this::convertToResponseDto);
+    }
+
+    private String normalizeSortField(String sortField) {
+        return switch (sortField) {
+            case "email" -> "emails";
+            case "phone" -> "phones";
+            default -> sortField;
+        };
     }
 
     @Override

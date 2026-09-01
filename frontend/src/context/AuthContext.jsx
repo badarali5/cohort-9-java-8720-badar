@@ -12,19 +12,33 @@ function readStoredUser() {
 }
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem('auth_token'))
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('auth_token')
+    } catch {
+      return null
+    }
+  })
   const [user, setUser] = useState(readStoredUser)
 
   function login(nextToken, userData) {
-    localStorage.setItem('auth_token', nextToken)
-    localStorage.setItem('auth_user', JSON.stringify(userData ?? null))
+    try {
+      localStorage.setItem('auth_token', nextToken)
+      localStorage.setItem('auth_user', JSON.stringify(userData ?? null))
+    } catch {
+      // ignore storage quota/private mode issues and keep in-memory state available
+    }
     setToken(nextToken)
     setUser(userData ?? null)
   }
 
   function logout() {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
+    try {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+    } catch {
+      // ignore storage quota/private mode issues and still clear session state in memory
+    }
     setToken(null)
     setUser(null)
   }

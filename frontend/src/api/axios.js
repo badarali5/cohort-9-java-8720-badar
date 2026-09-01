@@ -8,9 +8,13 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  try {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  } catch {
+    // ignore storage access issues in restricted contexts
   }
   return config
 })
@@ -19,8 +23,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
+      try {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+      } catch {
+        // ignore storage errors in restricted contexts
+      }
       if (window.location.pathname !== '/login') {
         window.location.assign('/login')
       }

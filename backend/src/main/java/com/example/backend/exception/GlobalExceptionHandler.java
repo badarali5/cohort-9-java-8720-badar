@@ -52,6 +52,14 @@ public class GlobalExceptionHandler {
                 .body(buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+
+        return ResponseEntity.badRequest()
+                .body(buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage()));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleMalformedJson(HttpMessageNotReadableException ex) {
         log.warn("Malformed request body");

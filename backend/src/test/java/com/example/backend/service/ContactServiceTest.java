@@ -155,6 +155,33 @@ class ContactServiceTest {
         verify(contactRepository).findByUserId(user.getId(), pageable);
     }
 
+    @Test
+    @DisplayName("Should reject negative page indexes")
+    void testGetAllContactsRejectsNegativePage() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> contactService.getAllContacts(user.getId(), null, -1, 10, "firstName", "asc"));
+
+        assertEquals("Page index must be >= 0", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject non-positive page sizes")
+    void testGetAllContactsRejectsInvalidPageSize() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> contactService.getAllContacts(user.getId(), null, 0, 0, "firstName", "asc"));
+
+        assertEquals("Page size must be greater than 0", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject unknown sort fields")
+    void testGetAllContactsRejectsUnknownSortField() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> contactService.getAllContacts(user.getId(), null, 0, 10, "unknownField", "asc"));
+
+        assertEquals("Invalid sort field. Allowed values: id, firstName, lastName, email, phone", exception.getMessage());
+    }
+
     // ==================== Search Contacts Tests ====================
 
     @Test
