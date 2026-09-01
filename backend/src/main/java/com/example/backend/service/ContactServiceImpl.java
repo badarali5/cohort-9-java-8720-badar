@@ -39,167 +39,151 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ContactResponseDto> getAllContacts(String search, int page, int size, String sortBy, String sortDir, String userEmail) {
-        User user = getUserByEmail(userEmail);
+    public Page<ContactResponseDto> getAllContacts(Long userId, String search, int page, int size, String sortBy, String sortDir) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Sort sort = sortDir.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String sortField = (sortBy == null || sortBy.isBlank()) ? "firstName" : sortBy;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
 
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<Contact> contactPage;
-
+        Page<Contact> contacts;
         if (search != null && !search.isBlank()) {
-            log.info("Searching contacts for userId={} with term: {}", user.getId(), search);
-            contactPage = contactRepository.searchByUserId(user.getId(), search.trim(), pageable);
+            contacts = contactRepository.searchContacts(user.getId(), search.trim(), pageable);
         } else {
-            log.info("Fetching all contacts for userId={}, page: {}, size: {}", user.getId(), page, size);
-            contactPage = contactRepository.findByUserId(user.getId(), pageable);
+            contacts = contactRepository.findByUserId(user.getId(), pageable);
         }
 
-        return contactPage.map(this::mapToResponseDto);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ContactResponseDto getContactById(Long id, String userEmail) {
-        User user = getUserByEmail(userEmail);
-        Contact contact = findContactOwnedByUser(id, user.getId());
-        log.info("Contact retrieved: id={} for userId={}", id, user.getId());
-        return mapToResponseDto(contact);
-    }
-
-    @Override
-    @Transactional
-    public ContactResponseDto createContact(ContactRequestDto request, String userEmail) {
-        User user = getUserByEmail(userEmail);
-
-        Contact contact = new Contact();
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
-        contact.setUser(user);
-        contact.setEmails(new ArrayList<>());
-        contact.setPhones(new ArrayList<>());
-
-        applyEmails(contact, request.getEmails());
-        applyPhones(contact, request.getPhones());
-
-        Contact savedContact = contactRepository.save(contact);
-        log.info("Contact created successfully: id={} for userId={}",
-                savedContact.getId(), user.getId());
-        return mapToResponseDto(savedContact);
-    }
-
-    @Override
-    @Transactional
-    public ContactResponseDto updateContact(Long id, ContactRequestDto request, String userEmail) {
-        User user = getUserByEmail(userEmail);
-        Contact contact = findContactOwnedByUser(id, user.getId());
-
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
-
-        contact.getEmails().clear();
-        applyEmails(contact, request.getEmails());
-
-        contact.getPhones().clear();
-        applyPhones(contact, request.getPhones());
-
-        Contact savedContact = contactRepository.save(contact);
-        log.info("Contact updated successfully: id={} for userId={}", id, user.getId());
-        return mapToResponseDto(savedContact);
-    }
-
-    @Override
-    @Transactional
-    public void deleteContact(Long id, String userEmail) {
-        User user = getUserByEmail(userEmail);
-        Contact contact = findContactOwnedByUser(id, user.getId());
-        contactRepository.delete(contact);
-        log.info("Contact deleted successfully: id={} for userId={}", id, user.getId());
+        return contacts.map(this::convertToResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ContactResponseDto> getContactsByUser(Long userId, Pageable pageable) {
-        return contactRepository.findByUserId(userId, pageable).map(this::mapToResponseDto);
+        return contactRepository.findByUserId(userId, pageable).map(this::convertToResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ContactResponseDto> searchContacts(Long userId, String searchTerm, Pageable pageable) {
-        return contactRepository.searchContacts(userId, searchTerm, pageable).map(this::mapToResponseDto);
+        return contactRepository.searchContacts(userId, searchTerm, pageable).map(this::convertToResponseDto);
     }
 
     @Override
     @Transactional
-    public ContactResponseDto createContact(Long userId, ContactRequestDto request) {
+    public ContactResponseDto createContact(Long userId, ContactRequestDto contactRequestDto) {
+        log.info("Creating new contact for user: {}", userId);
+
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found: {}", userId);
+                    return new ResourceNotFoundException("User not found");
+                });
+
         Contact contact = new Contact();
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
+        contact.setFirstName(contactRequestDto.getFirstName());
+        contact.setLastName(contactRequestDto.getLastName());
+        contact.setTitle(contactRequestDto.getTitle());
         contact.setUser(user);
         contact.setEmails(new ArrayList<>());
         contact.setPhones(new ArrayList<>());
+
+        applyEmails(contact, contactRequestDto.getEmails());
+        applyPhones(contact, contactRequestDto.getPhones());
+
         Contact savedContact = contactRepository.save(contact);
-        savedContact.setEmails(new ArrayList<>());
-        savedContact.setPhones(new ArrayList<>());
-        applyEmails(savedContact, request.getEmails());
-        applyPhones(savedContact, request.getPhones());
-        if (!savedContact.getEmails().isEmpty()) savedContact.setEmails(emailRepository.saveAll(savedContact.getEmails()));
-        if (!savedContact.getPhones().isEmpty()) savedContact.setPhones(phoneRepository.saveAll(savedContact.getPhones()));
-        return mapToResponseDto(savedContact);
+        if (savedContact.getEmails() != null && !savedContact.getEmails().isEmpty()) {
+            savedContact.setEmails(emailRepository.saveAll(savedContact.getEmails()));
+        }
+        if (savedContact.getPhones() != null && !savedContact.getPhones().isEmpty()) {
+            savedContact.setPhones(phoneRepository.saveAll(savedContact.getPhones()));
+        }
+
+        log.info("Contact created successfully with id: {}", savedContact.getId());
+        return convertToResponseDto(savedContact);
     }
 
     @Override
     @Transactional
-    public ContactResponseDto updateContact(Long userId, Long contactId, ContactRequestDto request) {
+    public ContactResponseDto updateContact(Long userId, Long contactId, ContactRequestDto contactRequestDto) {
+        log.info("Updating contact: {} for user: {}", contactId, userId);
+
         Contact contact = contactRepository.findByIdAndUserId(contactId, userId)
-            .orElseThrow(() -> new UnauthorizedAccessException("You do not have permission to update this contact"));
-        contact.setFirstName(request.getFirstName());
-        contact.setLastName(request.getLastName());
-        contact.setTitle(request.getTitle());
-        if (request.getEmails() != null) {
-            List<Email> existingEmails = contact.getEmails();
-            emailRepository.deleteAll(existingEmails);
-            contact.setEmails(new ArrayList<>());
-            applyEmails(contact, request.getEmails());
-            contact.setEmails(emailRepository.saveAll(contact.getEmails()));
+                .orElseThrow(() -> {
+                    log.error("Contact not found or unauthorized access: {} for user: {}", contactId, userId);
+                    return new UnauthorizedAccessException("You do not have permission to update this contact");
+                });
+
+        contact.setFirstName(contactRequestDto.getFirstName());
+        contact.setLastName(contactRequestDto.getLastName());
+        contact.setTitle(contactRequestDto.getTitle());
+
+        if (contactRequestDto.getEmails() != null) {
+            if (contact.getEmails() != null) {
+                emailRepository.deleteAll(contact.getEmails());
+                contact.setEmails(new ArrayList<>(contact.getEmails()));
+                contact.getEmails().clear();
+            }
+            applyEmails(contact, contactRequestDto.getEmails());
+            if (contact.getEmails() != null && !contact.getEmails().isEmpty()) {
+                contact.setEmails(emailRepository.saveAll(contact.getEmails()));
+            }
         }
-        if (request.getPhones() != null) {
-            List<Phone> existingPhones = contact.getPhones();
-            phoneRepository.deleteAll(existingPhones);
-            contact.setPhones(new ArrayList<>());
-            applyPhones(contact, request.getPhones());
-            contact.setPhones(phoneRepository.saveAll(contact.getPhones()));
+
+        if (contactRequestDto.getPhones() != null) {
+            if (contact.getPhones() != null) {
+                phoneRepository.deleteAll(contact.getPhones());
+                contact.setPhones(new ArrayList<>(contact.getPhones()));
+                contact.getPhones().clear();
+            }
+            applyPhones(contact, contactRequestDto.getPhones());
+            if (contact.getPhones() != null && !contact.getPhones().isEmpty()) {
+                contact.setPhones(phoneRepository.saveAll(contact.getPhones()));
+            }
         }
-        return mapToResponseDto(contactRepository.save(contact));
+
+        Contact updatedContact = contactRepository.save(contact);
+        log.info("Contact updated successfully: {}", contactId);
+        return convertToResponseDto(updatedContact);
     }
 
     @Override
     @Transactional
     public void deleteContact(Long userId, Long contactId) {
+        log.info("Deleting contact: {} for user: {}", contactId, userId);
+
         Contact contact = contactRepository.findByIdAndUserId(contactId, userId)
-            .orElseThrow(() -> new UnauthorizedAccessException("You do not have permission to delete this contact"));
+                .orElseThrow(() -> {
+                    log.error("Contact not found or unauthorized access: {} for user: {}", contactId, userId);
+                    return new UnauthorizedAccessException("You do not have permission to delete this contact");
+                });
+
         contactRepository.delete(contact);
+        log.info("Contact deleted successfully: {}", contactId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ContactResponseDto getContactById(Long userId, Long contactId) {
-        return mapToResponseDto(contactRepository.findByIdAndUserId(contactId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contact not found")));
+        log.info("Fetching contact: {} for user: {}", contactId, userId);
+
+        Contact contact = contactRepository.findByIdAndUserId(contactId, userId)
+                .orElseThrow(() -> {
+                    log.error("Contact not found or unauthorized access: {} for user: {}", contactId, userId);
+                    return new ResourceNotFoundException("Contact not found");
+                });
+
+        return convertToResponseDto(contact);
     }
 
     private void applyEmails(Contact contact, List<EmailDto> emailDtos) {
         if (emailDtos == null) {
             return;
         }
+        if (contact.getEmails() == null) {
+            contact.setEmails(new ArrayList<>());
+        }
+
         for (EmailDto emailDto : emailDtos) {
             Email email = new Email();
             email.setEmail(emailDto.getEmail());
@@ -213,6 +197,10 @@ public class ContactServiceImpl implements ContactService {
         if (phoneDtos == null) {
             return;
         }
+        if (contact.getPhones() == null) {
+            contact.setPhones(new ArrayList<>());
+        }
+
         for (PhoneDto phoneDto : phoneDtos) {
             Phone phone = new Phone();
             phone.setNumber(phoneDto.getNumber());
@@ -222,23 +210,7 @@ public class ContactServiceImpl implements ContactService {
         }
     }
 
-    private User getUserByEmail(String email) {
-        return userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> {
-                    log.error("Authenticated user not found");
-                    return new ResourceNotFoundException("User not found");
-                });
-    }
-
-    private Contact findContactOwnedByUser(Long contactId, Long userId) {
-        return contactRepository.findByIdAndUserId(contactId, userId)
-                .orElseThrow(() -> {
-                    log.warn("Contact not found or access denied: id={}, userId={}", contactId, userId);
-                    return new ResourceNotFoundException("Contact not found with id: " + contactId);
-                });
-    }
-
-    private ContactResponseDto mapToResponseDto(Contact contact) {
+    private ContactResponseDto convertToResponseDto(Contact contact) {
         ContactResponseDto dto = new ContactResponseDto();
         dto.setId(contact.getId());
         dto.setFirstName(contact.getFirstName());
@@ -248,19 +220,17 @@ public class ContactServiceImpl implements ContactService {
         dto.setUpdatedAt(contact.getUpdatedAt());
 
         if (contact.getEmails() != null) {
-            List<EmailDto> emailDtos = contact.getEmails().stream()
+            dto.setEmails(contact.getEmails().stream()
                     .map(email -> new EmailDto(email.getId(), email.getEmail(), email.getLabel()))
-                    .collect(Collectors.toList());
-            dto.setEmails(emailDtos);
+                    .collect(Collectors.toList()));
         } else {
             dto.setEmails(null);
         }
 
         if (contact.getPhones() != null) {
-            List<PhoneDto> phoneDtos = contact.getPhones().stream()
+            dto.setPhones(contact.getPhones().stream()
                     .map(phone -> new PhoneDto(phone.getId(), phone.getNumber(), phone.getLabel()))
-                    .collect(Collectors.toList());
-            dto.setPhones(phoneDtos);
+                    .collect(Collectors.toList()));
         } else {
             dto.setPhones(null);
         }

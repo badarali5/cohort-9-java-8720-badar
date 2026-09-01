@@ -68,6 +68,14 @@ public class GlobalExceptionHandler {
                 .body(buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", "Invalid credentials"));
     }
 
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        log.warn("Unauthorized access: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage()));
+    }
+
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleUserNotFound(UsernameNotFoundException ex) {
         log.warn("User not found: {}", ex.getMessage());

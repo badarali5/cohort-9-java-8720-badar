@@ -25,7 +25,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        boolean emailExists = userRepository.existsByEmail(request.getEmail());
+        if (!emailExists) {
+            emailExists = userRepository.existsByEmailIgnoreCase(request.getEmail());
+        }
+        if (emailExists) {
             log.warn("Duplicate registration attempt");
             throw new DuplicateResourceException("Email is already registered");
         }
@@ -44,13 +48,18 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        User savedUser = userRepository.save(user);
-        log.info("User registered successfully");
+        try {
+            User savedUser = userRepository.save(user);
+            log.info("User registered successfully");
 
-        String token = jwtTokenProvider.generateToken(savedUser.getEmail());
+            String token = jwtTokenProvider.generateToken(savedUser.getEmail());
 
-        return new AuthResponse(token, savedUser.getId(), savedUser.getFirstName(),
-                savedUser.getLastName(), savedUser.getEmail());
+            return new AuthResponse(token, savedUser.getId(), savedUser.getFirstName(),
+                    savedUser.getLastName(), savedUser.getEmail());
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            log.warn("Email already registered during concurrent insert");
+            throw new DuplicateResourceException("Email is already registered");
+        }
     }
 
     @Override
@@ -59,11 +68,12 @@ public class AuthServiceImpl implements AuthService {
         String identifier = request.getIdentifier();
 
         User user = userRepository.findByEmail(identifier)
-                .orElseGet(() -> userRepository.findByPhone(identifier)
-                        .orElseThrow(() -> {
-                            log.warn("Failed login attempt: user not found");
-                            return new UnauthorizedException("Invalid credentials");
-                        }));
+                .or(() -> userRepository.findByEmailIgnoreCase(identifier))
+                .or(() -> userRepository.findByPhone(identifier))
+                .orElseThrow(() -> {
+                    log.warn("Failed login attempt: user not found");
+                    return new UnauthorizedException("Invalid credentials");
+                });
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Failed login attempt: incorrect password");
