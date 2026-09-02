@@ -105,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        log.info("Password changed successfully");
+        log.info("Password changed successfully for user id: {}", userId);
     }
 }
 

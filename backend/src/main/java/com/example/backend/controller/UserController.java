@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ChangePasswordRequest;
 import com.example.backend.entity.User;
+import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UnauthorizedException;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AuthService;
@@ -48,4 +49,3 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }
-
