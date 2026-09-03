@@ -40,11 +40,11 @@ public class UserController {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> {
                     log.error("Authenticated user not found in database");
-                    return new ResourceNotFoundException("User not found");
+                    return new UnauthorizedException("Authentication is required");
                 });
 
         authService.changePassword(user.getId(), request);
-        log.info("Password changed successfully for userId={}", user.getId());
+        log.info("Password changed successfully");
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }

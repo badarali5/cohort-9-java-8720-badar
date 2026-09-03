@@ -48,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("User authenticated successfully");
+                log.debug("Authenticated user established");
             }
         } catch (UsernameNotFoundException e) {
             log.warn("User not found during JWT authentication");

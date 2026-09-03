@@ -21,15 +21,14 @@ public class RegisterRequest {
     @Size(max = 50, message = "Last name must not exceed 50 characters")
     private String lastName;
 
-    @NotBlank(message = "Password is required")
-    @Size(max = 72)
+        @NotBlank(message = "Password is required")
     @Pattern(
     regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
     message = "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
 )
     private String password;
 
-    @NotBlank(message = "Email is required")
+        @NotBlank(message = "Email is required")
     @jakarta.validation.constraints.Email(message = "Email must be a valid email address")
     private String email;
 
