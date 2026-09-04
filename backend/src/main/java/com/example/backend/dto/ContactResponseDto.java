@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -19,9 +18,8 @@ public class ContactResponseDto {
     private String firstName;
     private String lastName;
     private String title;
-    private List<EmailDto> emails = new ArrayList<>();
-    private List<PhoneDto> phones = new ArrayList<>();
+    private List<EmailDto> emails;
+    private List<PhoneDto> phones;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-
