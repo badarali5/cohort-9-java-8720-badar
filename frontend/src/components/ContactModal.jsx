@@ -27,7 +27,7 @@ function normalizeContact(value) {
   return safeContact
 }
 
-export default function ContactModal({ contact, onClose, onSave }) {
+export default function ContactModal({ contact, onClose, onSave, isSaving }) {
   const [form, setForm] = useState(normalizeContact(contact ?? emptyContact))
   const [formError, setFormError] = useState('')
 
@@ -184,7 +184,9 @@ export default function ContactModal({ contact, onClose, onSave }) {
 
           <div className="modal-actions">
             <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
-            <button type="submit" className="primary-action">{contact ? 'Save changes' : 'Create contact'}</button>
+            <button type="submit" className="primary-action" disabled={isSaving}>
+              {isSaving ? 'Saving...' : contact ? 'Save changes' : 'Create contact'}
+            </button>
           </div>
         </form>
       </div>

@@ -60,15 +60,21 @@ export default function Dashboard() {
   const [contactToDelete, setContactToDelete] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     async function fetchContacts() {
       try {
         setLoading(true)
         setError('')
-        const response = await api.get('/contacts')
+        const response = await api.get('/contacts', {
+          params: { page: currentPage - 1, size: 10 },
+        })
         const items = response.data?.content ?? response.data ?? []
         setContacts(items.map(normalizeContactData))
+        setTotalPages(response.data?.totalPages ?? 1)
       } catch (err) {
         setError('Unable to load contacts right now.')
       } finally {
@@ -77,7 +83,7 @@ export default function Dashboard() {
     }
 
     fetchContacts()
-  }, [])
+  }, [currentPage])
 
   const name = user?.firstName || 'there'
 
@@ -109,6 +115,8 @@ export default function Dashboard() {
   }
 
   async function saveContact(formData) {
+    if (isSaving) return
+
     const firstName = formData.firstName?.trim() ?? ''
     const lastName = formData.lastName?.trim() ?? ''
 
@@ -118,6 +126,7 @@ export default function Dashboard() {
     }
 
     try {
+      setIsSaving(true)
       setError('')
       const payload = toApiPayload(formData)
 
@@ -134,6 +143,8 @@ export default function Dashboard() {
       closeModal()
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Unable to save contact right now.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -242,6 +253,28 @@ export default function Dashboard() {
               })}
             </div>
           )}
+
+          {!loading && !error && totalPages > 1 && (
+            <nav className="pagination" aria-label="Contact pages">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setCurrentPage((page) => page - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setCurrentPage((page) => page + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </nav>
+          )}
         </section>
       </main>
 
@@ -250,6 +283,7 @@ export default function Dashboard() {
           contact={modalState.type === 'edit' ? modalState.contact : null}
           onClose={closeModal}
           onSave={saveContact}
+          isSaving={isSaving}
         />
       )}
 
