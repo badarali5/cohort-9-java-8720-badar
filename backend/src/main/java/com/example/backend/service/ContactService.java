@@ -13,5 +13,5 @@ public interface ContactService {
     ContactResponseDto updateContact(Long userId, Long contactId, ContactRequestDto contactRequestDto);
     void deleteContact(Long userId, Long contactId);
     ContactResponseDto getContactById(Long userId, Long contactId);
+    
 }
-

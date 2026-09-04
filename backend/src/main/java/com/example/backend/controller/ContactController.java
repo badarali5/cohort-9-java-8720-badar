@@ -34,9 +34,12 @@ public class ContactController {
             Authentication authentication) {
 
         Long userId = getCurrentUserId(authentication);
-        log.info("GET /api/contacts requested by userId={} (page={}, size={})", userId, page, size);
+        log.info("GET /api/contacts requested by userId={} (page={}, size={})",
+                userId, page, size);
 
-        Page<ContactResponseDto> contacts = contactService.getAllContacts(userId, search, page, size, sortBy, sortDir);
+        Page<ContactResponseDto> contacts =
+                contactService.getAllContacts(userId, search, page, size, sortBy, sortDir);
+
         return ResponseEntity.ok(contacts);
     }
 
@@ -90,14 +93,19 @@ public class ContactController {
     }
 
     private Long getCurrentUserId(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+
             throw new UnauthorizedException("Authentication is required");
         }
 
         String email = authentication.getName();
+
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new UnauthorizedException("Authentication is required"));
+                .orElseThrow(() ->
+                        new UnauthorizedException("Authentication is required"));
+
         return user.getId();
     }
 }
-
